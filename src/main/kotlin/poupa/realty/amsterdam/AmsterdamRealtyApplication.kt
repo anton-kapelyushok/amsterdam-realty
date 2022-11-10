@@ -62,7 +62,7 @@ class AmsterdamRealtyApplication(
             "webdriver.gecko.driver",
             "/Users/akapelyushok/Projects/amsterdam-realty/lib/geckodriver"
         )
-//        val res1 = bot.execute(SendSilentMessage(meId, "I'm alive!"))
+        val res1 = bot.execute(SendSilentMessage(meId, "I'm alive!"))
 //        println(res)
 //        val res = parariusListingsFetcher.fetch()
 //        res
