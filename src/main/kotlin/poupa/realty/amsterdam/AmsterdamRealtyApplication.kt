@@ -169,7 +169,6 @@ class ParariusListingsFetcher(
         val webDriver = driverFactory.webDriver()
         val text = try {
             webDriver.navigate().to("https://www.pararius.nl/huurwoningen/amsterdam/1500-2000")
-            webDriver.manage().window().position = Point(-100, -1000);
 
             val start = System.currentTimeMillis()
             while (true) {
