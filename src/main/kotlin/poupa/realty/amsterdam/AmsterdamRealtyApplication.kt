@@ -5,7 +5,6 @@ import com.pengrad.telegrambot.request.SendMessage
 import mu.KotlinLogging
 import org.jsoup.Jsoup
 import org.openqa.selenium.By
-import org.openqa.selenium.Point
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
 import org.openqa.selenium.firefox.FirefoxOptions
@@ -29,7 +28,9 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse.BodyHandlers
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import javax.annotation.PreDestroy
 import kotlin.random.Random
+import kotlin.reflect.KClass
 
 
 private val log = KotlinLogging.logger {}
@@ -71,6 +72,12 @@ class AmsterdamRealtyApplication(
 //        println(res)
 
     }
+
+
+    @PreDestroy
+    fun onExit() {
+        val res1 = bot.execute(SendSilentMessage(meId, "I'm dying :("))
+    }
 }
 
 fun SendSilentMessage(chatId: Any, text: String) = SendMessage(chatId, text).apply {
@@ -84,8 +91,10 @@ class CronChecker(
     private val jdbcTemplate: NamedParameterJdbcTemplate,
     private val telegramBot: TelegramBot,
 ) {
-    //    @Scheduled(cron = "0 */5 * * * *")
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+
+    private val unhealthyFetchers = mutableSetOf<KClass<*>>()
+
+    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES)
     fun runUpdate() {
         val listings = listOf(
             parariusListingsFetcher,
@@ -94,7 +103,16 @@ class CronChecker(
             try {
                 val res = it.fetch()
                 if (res.isEmpty()) {
-                    telegramBot.execute(SendSilentMessage(meId, "${it::class.java} returned empty result"))
+                    if (it::class !in unhealthyFetchers) {
+                        telegramBot.execute(SendSilentMessage(meId, "${it::class.java} returned empty result"))
+                    } else {
+                        unhealthyFetchers += it::class
+                    }
+                } else {
+                    if (it::class in unhealthyFetchers) {
+                        unhealthyFetchers -= it::class
+                        telegramBot.execute(SendSilentMessage(meId, "${it::class.java} restored!"))
+                    }
                 }
                 res
             } catch (e: Throwable) {
@@ -168,7 +186,7 @@ class ParariusListingsFetcher(
 
         val webDriver = driverFactory.webDriver()
         val text = try {
-            webDriver.navigate().to("https://www.pararius.nl/huurwoningen/amsterdam/1500-2000")
+            webDriver.navigate().to("https://www.pararius.nl/huurwoningen/amsterdam/1200-2000")
 
             val start = System.currentTimeMillis()
             while (true) {
@@ -244,7 +262,7 @@ class FundaListingsFetcher : ListingsFetcher {
     override fun fetch(): List<Listing> {
 
 
-        val link = "https://www.funda.nl/huur/amsterdam/1500-2000/sorteer-datum-af/"
+        val link = "https://www.funda.nl/huur/amsterdam/1250-2000/sorteer-datum-af/"
         val request = HttpRequest.newBuilder().uri(URI.create(link)).header(
             "accept",
             """text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"""
