@@ -117,7 +117,9 @@ class CronChecker(
                 res
             } catch (e: Throwable) {
                 log.error(e) {}
+                unhealthyFetchers += it::class
                 val sw = StringWriter()
+                sw.write(it::class.toString() + ":\n")
                 e.printStackTrace(PrintWriter(sw))
                 val exceptionAsString = sw.toString()
                 telegramBot.execute(SendMessage(meId, exceptionAsString))
