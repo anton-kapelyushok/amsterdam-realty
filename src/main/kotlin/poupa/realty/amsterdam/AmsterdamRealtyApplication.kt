@@ -154,6 +154,7 @@ class CronChecker(
                 """.trimIndent()
                     )
                 )
+                Thread.sleep(2000)
             } else {
                 log.info { "${listing.link} already exists" }
             }
