@@ -61,7 +61,7 @@ class AmsterdamRealtyApplication(
     override fun run(args: ApplicationArguments?) {
         System.setProperty(
             "webdriver.gecko.driver",
-            "/Users/akapelyushok/Projects/amsterdam-realty/lib/geckodriver"
+            "/Users/Anton.Kapeliushok/Projects/amsterdam-realty/lib/geckodriver"
         )
         val res1 = bot.execute(SendSilentMessage(meId, "I'm alive!"))
 //        println(res)
@@ -231,7 +231,9 @@ class ParariusListingsFetcher(
 
         val f = Jsoup.parse(text)
         val names = f.select(".listing-search-item__title").map { it.text() }
-        val addresses = f.select(".listing-search-item__sub-title").map { it.text() }
+        val addresses = f.select(".listing-search-item__title")
+            .map { it.siblingElements().find { it.className() == "listing-search-item__sub-title'" } }
+            .map { it?.text() ?: "????" }
         val links = f.select(".listing-search-item__link--title").map { "https://www.pararius.nl" + it.attr("href") }
         val prices = f.select(".listing-search-item__price").map { it.text() }
         val source = "pararius"
@@ -239,7 +241,11 @@ class ParariusListingsFetcher(
         log.info { "Fetched ${names.size} items from pararius" }
         return names.indices.map { idx ->
             Listing(
-                link = links[idx], name = names[idx], address = addresses[idx], price = prices[idx], source = source
+                link = links[idx],
+                name = names[idx],
+                address = addresses[idx],
+                price = prices[idx],
+                source = source
             )
         }
     }
@@ -265,7 +271,8 @@ class FundaListingsFetcher : ListingsFetcher {
     override fun fetch(): List<Listing> {
 
 
-        val link = "https://www.funda.nl/huur/amsterdam/1250-2000/sorteer-datum-af/"
+        val link =
+            "https://www.funda.nl/zoeken/huur/?selected_area=%5B%22amsterdam%22%5D&price=%221750-2250%22&sort=%22date_down%22"
         val request = HttpRequest.newBuilder().uri(URI.create(link)).header(
             "accept",
             """text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"""
@@ -281,14 +288,16 @@ class FundaListingsFetcher : ListingsFetcher {
         val text = client.send(request, BodyHandlers.ofString()).body()
 //        val text = File("./funda.html").readText()
         val f = Jsoup.parse(text)
-        val names = f.select(".search-result__header-title").map { it.text() }
-        val addresses = f.select(".search-result__header-subtitle").map { it.text() }
+        val names = f.select("[data-test-id=street-name-house-number]").map { it.text() }
+        val addresses = f.select("[data-test-id=postal-code-city]").map { it.text() }
         val links =
-            f.select(".search-result__header-title-col a:first-child").map { "https://www.funda.nl" + it.attr("href") }
-        val prices = f.select(".search-result-price").map { it.text() }
+            f.select("[data-test-id=street-name-house-number]")
+                .map { it.parent()!! }
+                .map { it.attr("href") }
+        val prices = f.select("[data-test-id=price-rent]").map { it.text() }
         val source = "funda"
 
-        log.info { "Fetched ${names.size} items from pararius" }
+        log.info { "Fetched ${names.size} items from funda" }
         return names.indices.map { idx ->
             Listing(
                 link = links[idx], name = names[idx], address = addresses[idx], price = prices[idx], source = source
