@@ -361,7 +361,7 @@ class AsyncTelegramListingHandler(
                 } catch (e: Exception) {
                     log.warn(e) { "Failed to send listing to tg ${listing.link}: ${e.message}" }
                 }
-                Thread.sleep(200)
+                Thread.sleep(500)
             }
         }
     }
@@ -398,6 +398,7 @@ class SyncTelegramListingHandler(
 class OpenInBrowserListingHandler : ListingHandler {
     override fun handleListing(listing: Listing) {
         ProcessBuilder("open", listing.link).start()
+        Thread.sleep(200)
     }
 }
 
